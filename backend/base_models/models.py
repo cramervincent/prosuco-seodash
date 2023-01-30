@@ -2,17 +2,18 @@ from pydantic import BaseModel, Field
 from typing_extensions import Annotated
 
 
-# class DummyData(BaseModel):
-#     title:str
-#     author:str
-#     description:str
-#     rating:int
 
 
-class LinkData(BaseModel):
-    link:list[dict]
-    class Config:
-         orm_mode=True
+
+# class LinkData(BaseModel):
+#     link:list[dict]
+#     class Config:
+#          orm_mode=True
+
+class backlinkData(BaseModel):
+    link:str
+    website:str
+    
 
 class LoginData(BaseModel):
     username:str
@@ -32,9 +33,9 @@ class RegisterData(BaseModel):
     lastname:str
     email:str
     password:str
-    birthday:str|None = None
+    birthday:str
     is_admin:bool = False
-    photo:str|None = None
+    photo:str
 
 
 

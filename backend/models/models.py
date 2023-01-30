@@ -34,4 +34,14 @@ class users(Base):
     client = relationship("clients", back_populates="users")
 
 
-    
+class backlinks(Base):
+    __tablename__ = "backlinks"
+    id = Column(Integer, primary_key=True, index=True)
+    link = Column(String)
+    website = Column(String)
+    da = Column(String)
+    pa = Column(String)
+    status = Column(String)
+    last_check = Column(String)
+
+   

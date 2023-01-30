@@ -6,45 +6,48 @@
         :rows="rows"
         :columns="columns"
         row-key="name"
-        selection="multiple"
-        v-model:selected="selected"
         :loading="loading"
+        :selected-rows-label="getSelectedString"
+        selection="single"
+        v-model:selected="selected"
       >
-      <template v-slot:top>
-      <div v-if="!refreshButton">
-
-          <q-btn
-            icon="link"
-            unelevated
-            rounded
-            color="positive"
-            text-color="white"
-            label="Toevoegen"
-            class="q-mr-sm"
-            @click="addSiteModal"
-          />
-        </div>
+        <template v-slot:top>
+          <div v-if="!refreshButton">
+            <q-btn
+              icon="link"
+              unelevated
+              rounded
+              color="positive"
+              text-color="white"
+              label="Toevoegen"
+              class="q-mr-sm"
+              @click="addSiteModal"
+            />
+          </div>
           <div v-else>
             <q-btn
-            icon="find_in_page"
-            unelevated
-            rounded
-            color="primary"
-            text-color="white"
-            label="Start scan"
-            @click="scanLinks(selected)"
-          />
-          <q-btn
-            icon="delete_forever"
-            rounded
-            color="negative"
-            text-color="white"
-            class="q-ml-sm"
-            @click="deleteLinks"
-          />
+              icon="find_in_page"
+              unelevated
+              rounded
+              color="primary"
+              text-color="white"
+              label="Start scan"
+              @click="scanLinks(selected)"
+            />
+            <q-btn
+              icon="delete_forever"
+              rounded
+              color="negative"
+              text-color="white"
+              class="q-ml-sm"
+              @click="deleteLinks"
+            />
           </div>
-
         </template>
+        <!-- <template v-slot:body-cell-select="props">
+{{ selected }}
+<q-checkbox v-model="selected"/>
+</template> -->
         <template v-slot:body-cell-status="props">
           <q-td :props="props">
             <div>
@@ -61,7 +64,6 @@
         </template>
       </q-table>
     </div>
-
     <q-dialog v-model="newLinkModal">
       <q-card style="width: 700px; max-width: 80vw">
         <q-card-section class="row items-center q-pb-none">
@@ -72,8 +74,18 @@
 
         <q-card-section>
           <q-form>
-            <q-input oulined type="url" v-model="newLink.link" label="Link die je wilt controleren"/>
-            <q-input oulined type="url" v-model="newLink.site" label="Website waar de link is geplaatst"/>
+            <q-input
+              oulined
+              type="url"
+              v-model="newLink.link"
+              label="Link die je wilt controleren"
+            />
+            <q-input
+              oulined
+              type="url"
+              v-model="newLink.website"
+              label="Website waar de link is geplaatst"
+            />
           </q-form>
         </q-card-section>
         <q-card-actions class="flex justify-end">
@@ -98,7 +110,10 @@ import { data } from "autoprefixer";
 import { ref } from "vue";
 const columns = [
   {
-    name: "desc",
+    name: "select",
+  },
+  {
+    name: "link",
     required: true,
     label: "Link",
     align: "left",
@@ -135,7 +150,7 @@ const columns = [
     required: true,
     label: "Laatste check",
     align: "left",
-    field: "lastCheck",
+    field: "last_check",
     sortable: true,
   },
 ];
@@ -144,69 +159,68 @@ export default {
   setup() {
     const selected = ref([]);
   },
+  mounted() {
+    this.loadAllLinks();
+  },
   data() {
     return {
       selected: [],
-      rows: [
-        {
-          name: 0,
-          link: "https://enormail.eu/?ref=ybfkiJzXkb",
-          website: "https://www.prosuco.nl/dit_zijn_we/onze_vrienden",
-          status: true,
-          lastCheck: "26-01-2023",
-          da:33,
-
-        },
-        {
-          name: 1,
-          link: "https://www.prosuco.nl",
-          website: "https://www.ajax.nl",
-          status: false,
-          lastCheck: "26-01-2023",
-          da:13,
-
-        },
-      ],
+      rows: [{ name: "none" }],
       columns,
       loading: false,
       refreshButton: false,
       newLinkModal: false,
-      newLink: { site: "", link: "" },
+      newLink: { website: "", link: "" },
     };
   },
   methods: {
+    loadAllLinks() {
+      this.$api.get("backlinks").then((response) => {
+        console.log(response.data);
+        this.rows = response.data;
+      });
+    },
     addSiteModal() {
       this.newLinkModal = true;
     },
     addNewLink() {
-      // send to API if succesfull:
-      this.rows.push({
-        name: "response.data.id",
-        link: this.newLink.link,
-        website: this.newLink.site,
-        status: false,
-        lastCheck: "response.data.lastCheck",
-      });
+    console.log(this.newLink)
+      this.$api.post('backlink', this.newLink).then((response) => {
+        this.rows.push({
+          name: response.data.id,
+          link: this.newLink.link,
+          website: this.newLink.website,
+          status: false,
+          lastCheck: response.data.last_check,
+        });
+      })
+
     },
     async scanLinks(links) {
       this.$q.loading.show({
-        message:'Sites worden gescand...'
+        message: "Sites worden gescand...",
       });
-      await this.$api.post('backlinks/scan', {link:this.rows}).then((response)=>{
-        this.$q.loading.hide()
+      let postData = [];
+      this.rows.forEach((link) => {
+        postData.push(link.id);
+      });
+      await this.$api.post("backlinks/scan", postData).then((response) => {
+        this.$q.loading.hide();
 
         this.$q.notify({
-        message:response.data,
-        timeout: 2500,
-        type:'positive'
+          message: response.data,
+          timeout: 2500,
+          type: "positive",
+        });
       });
-      })
-
-
-
-
-
     },
+    deleteLinks() {
+      this.selected.forEach((element, index) => {
+        this.$api.delete(`backlinks/${element.id}`).then(() => {
+          this.rows.splice(index, 1)
+        })
+      })
+    }
   },
   watch: {
     selected(v) {
