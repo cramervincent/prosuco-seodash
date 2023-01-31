@@ -6,13 +6,9 @@
         :rows="rows"
         :columns="columns"
         row-key="name"
-        selection="multiple"
-        v-model:selected="selected"
         :loading="loading"
       >
-      <template v-slot:top>
-      <div v-if="!refreshButton">
-
+        <template v-slot:top>
           <q-btn
             icon="link"
             unelevated
@@ -23,27 +19,36 @@
             class="q-mr-sm"
             @click="addSiteModal"
           />
-        </div>
-          <div v-else>
-            <q-btn
+          <q-btn
             icon="find_in_page"
             unelevated
             rounded
             color="primary"
             text-color="white"
-            label="Start scan"
+            label="Scan alle links"
             @click="scanLinks(selected)"
           />
-          <q-btn
-            icon="delete_forever"
-            rounded
-            color="negative"
-            text-color="white"
-            class="q-ml-sm"
-            @click="deleteLinks"
-          />
-          </div>
+        </template>
+        <template v-slot:body-cell-actions="props">
+          <q-td>
+            <q-btn-dropdown flat dropdown-icon="more_horiz">
+              <q-list bordered>
+                <q-item clickable v-ripple>
+                  <q-item-section avatar>
+                    <q-icon color="primary" name="find_in_page" size="sm"/>
+                  </q-item-section>
+                  <q-item-section>Scan</q-item-section>
+                </q-item>
+                <q-item clickable v-ripple @click="deleteLink(props.row.id, props.pageIndex)">
+                  <q-item-section avatar>
+                    <q-icon color="negative" name="delete_forever" size="sm"/>
+                  </q-item-section>
+                  <q-item-section>Verwijder</q-item-section>
+                </q-item>
+              </q-list>
 
+            </q-btn-dropdown>
+          </q-td>
         </template>
         <template v-slot:body-cell-status="props">
           <q-td :props="props">
@@ -72,8 +77,18 @@
 
         <q-card-section>
           <q-form>
-            <q-input oulined type="url" v-model="newLink.link" label="Link die je wilt controleren"/>
-            <q-input oulined type="url" v-model="newLink.site" label="Website waar de link is geplaatst"/>
+            <q-input
+              oulined
+              type="url"
+              v-model="newLink.link"
+              label="Link die je wilt controleren"
+            />
+            <q-input
+              oulined
+              type="url"
+              v-model="newLink.site"
+              label="Website waar de link is geplaatst"
+            />
           </q-form>
         </q-card-section>
         <q-card-actions class="flex justify-end">
@@ -98,6 +113,12 @@ import { data } from "autoprefixer";
 import { ref } from "vue";
 const columns = [
   {
+    name: "actions",
+    label: "Akties",
+    align: "left",
+    sortable: false,
+  },
+  {
     name: "desc",
     required: true,
     label: "Link",
@@ -107,11 +128,11 @@ const columns = [
     sortable: true,
   },
   {
-    name: "website",
+    name: "site",
     required: true,
     label: "Website",
     align: "left",
-    field: "website",
+    field: "site",
     sortable: true,
   },
   {
@@ -120,6 +141,14 @@ const columns = [
     label: "DA",
     align: "left",
     field: "da",
+    sortable: true,
+  },
+  {
+    name: "pa",
+    required: true,
+    label: "PA",
+    align: "left",
+    field: "pa",
     sortable: true,
   },
   {
@@ -135,7 +164,7 @@ const columns = [
     required: true,
     label: "Laatste check",
     align: "left",
-    field: "lastCheck",
+    field: "last_check",
     sortable: true,
   },
 ];
@@ -147,26 +176,7 @@ export default {
   data() {
     return {
       selected: [],
-      rows: [
-        {
-          name: 0,
-          link: "https://enormail.eu/?ref=ybfkiJzXkb",
-          website: "https://www.prosuco.nl/dit_zijn_we/onze_vrienden",
-          status: true,
-          lastCheck: "26-01-2023",
-          da:33,
-
-        },
-        {
-          name: 1,
-          link: "https://www.prosuco.nl",
-          website: "https://www.ajax.nl",
-          status: false,
-          lastCheck: "26-01-2023",
-          da:13,
-
-        },
-      ],
+      rows: [],
       columns,
       loading: false,
       refreshButton: false,
@@ -180,33 +190,46 @@ export default {
     },
     addNewLink() {
       // send to API if succesfull:
-      this.rows.push({
-        name: "response.data.id",
-        link: this.newLink.link,
-        website: this.newLink.site,
-        status: false,
-        lastCheck: "response.data.lastCheck",
-      });
+      this.$api
+        .post("backlinks", {
+          link: this.newLink.link,
+          site: this.newLink.site,
+          status: "null",
+          pa: "?",
+          da: "?",
+          last_check: "?",
+        })
+        .then((response) => {
+          this.rows.push(response.data);
+          this.newLink.site = ""
+          this.newLink.link = ""
+          this.newLinkModal = true;
+        });
+
     },
     async scanLinks(links) {
       this.$q.loading.show({
-        message:'Sites worden gescand...'
+        message: "Sites worden gescand...",
       });
-      await this.$api.post('backlinks/scan', {link:this.rows}).then((response)=>{
-        this.$q.loading.hide()
-
-        this.$q.notify({
-        message:response.data,
-        timeout: 2500,
-        type:'positive'
-      });
-      })
-
-
-
-
-
+      await this.$api
+        .get("backlinks/scan")
+        .then((response) => {
+          this.$q.loading.hide();
+          this.$q.notify({
+            message: "Scan geslaagd",
+            type: "positive",
+          });
+        });
     },
+    deleteLink(id, i){
+      this.$api.delete(`backlinks/${id}`).then((response)=>{
+        this.rows.splice(i, 1);
+        this.$q.notify({
+          type:'positive',
+          message:response.data
+        })
+      })
+    }
   },
   watch: {
     selected(v) {
@@ -216,6 +239,11 @@ export default {
         this.refreshButton = false;
       }
     },
+  },
+  mounted() {
+    this.$api.get("backlinks").then((response) => {
+      this.rows = response.data;
+    });
   },
 };
 </script>

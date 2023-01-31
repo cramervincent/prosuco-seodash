@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from dependencies.dependencies import *
 from models import models
 from models import *
-
+from functions.functions import scan_all_backlinks
 
 from schemas.backlinks import *
 
@@ -14,6 +14,33 @@ async def get_all_backlinks(db:Session = Depends(get_db)):
     result = db.query(models.Backlinks).all()
     return result
 
+@router.get("/backlinks/scan")
+async def get_all_backlinks(db:Session = Depends(get_db)):
+    from datetime import date
+    results = db.query(models.Backlinks).all()
+    today = date.today()
+    
+    for r in results:
+        print(r.id)
+        # result = db.get(models.Backlinks, r.id)
+        
+        
+        # if not scan_all_backlinks(result.site, result.link):
+        #     result.status = "False",
+        #     result.last_check = "today.strftime('%m/%d/%Y')"
+        #     db.add(result)
+        #     db.commit()
+            
+        # else:
+        #     result.status = "True",
+        #     result.last_check = "today.strftime('%m/%d/%Y')"
+        #     db.add(result)
+        #     db.commit()
+          
+        # db.refresh(results)
+        return results
+
+
 @router.get("/backlinks/{bId}")
 async def get_all_backlinks(bId, db:Session = Depends(get_db)):
     result = db.query(models.Backlinks).filter(models.Backlinks.id == bId).first()
@@ -24,18 +51,18 @@ async def get_all_backlinks(bId, db:Session = Depends(get_db)):
 @router.post("/backlinks/")
 async def create_new_backlink(data:backlink_schema, db:Session =  Depends(get_db)):
     new_backlink = models.Backlinks(
-        link = "String",
-        site = "String",
-        status = "String",
-        pa = "String",
-        da = "String",
-        last_check = "String"
+        link  = data.link,
+        site  = data.site,
+        status  = data.status,
+        pa  = data.pa,
+        da  = data.da,
+        last_check = data.last_check,
     )
     db.add(new_backlink)
     db.commit()
     db.refresh(new_backlink)
 
-    return {'status':'ok'}
+    return new_backlink
 
 @router.delete("/backlinks/{bId}")
 async def delete_a_backlink(bId, db:Session =  Depends(get_db)):
@@ -44,7 +71,7 @@ async def delete_a_backlink(bId, db:Session =  Depends(get_db)):
         raise HTTPException(status_code=404)
     db.delete(result)
     db.commit()
-    return {'ok':True}
+    return "Link verwijderd"
 
 # @router.put("/backlinks/{bId}")
 # async def edit_a_backlink():
