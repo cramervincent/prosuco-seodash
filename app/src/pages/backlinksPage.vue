@@ -12,6 +12,7 @@
         v-model:selected="selected"
       >
         <template v-slot:top>
+<<<<<<< HEAD
           <div v-if="!refreshButton">
             <q-btn
               icon="link"
@@ -43,6 +44,48 @@
               @click="deleteLinks"
             />
           </div>
+=======
+          <q-btn
+            icon="link"
+            unelevated
+            rounded
+            color="positive"
+            text-color="white"
+            label="Toevoegen"
+            class="q-mr-sm"
+            @click="addSiteModal"
+          />
+          <q-btn
+            icon="find_in_page"
+            unelevated
+            rounded
+            color="primary"
+            text-color="white"
+            label="Scan alle links"
+            @click="scanLinks(selected)"
+          />
+        </template>
+        <template v-slot:body-cell-actions="props">
+          <q-td>
+            <q-btn-dropdown flat dropdown-icon="more_horiz">
+              <q-list bordered>
+                <q-item clickable v-ripple>
+                  <q-item-section avatar>
+                    <q-icon color="primary" name="find_in_page" size="sm"/>
+                  </q-item-section>
+                  <q-item-section>Scan</q-item-section>
+                </q-item>
+                <q-item clickable v-ripple @click="deleteLink(props.row.id, props.pageIndex)">
+                  <q-item-section avatar>
+                    <q-icon color="negative" name="delete_forever" size="sm"/>
+                  </q-item-section>
+                  <q-item-section>Verwijder</q-item-section>
+                </q-item>
+              </q-list>
+
+            </q-btn-dropdown>
+          </q-td>
+>>>>>>> ede1377086369e7db261b3e304a9cdf701542d5a
         </template>
         <!-- <template v-slot:body-cell-select="props">
 {{ selected }}
@@ -83,7 +126,11 @@
             <q-input
               oulined
               type="url"
+<<<<<<< HEAD
               v-model="newLink.website"
+=======
+              v-model="newLink.site"
+>>>>>>> ede1377086369e7db261b3e304a9cdf701542d5a
               label="Website waar de link is geplaatst"
             />
           </q-form>
@@ -110,10 +157,20 @@ import { data } from "autoprefixer";
 import { ref } from "vue";
 const columns = [
   {
+<<<<<<< HEAD
     name: "select",
   },
   {
     name: "link",
+=======
+    name: "actions",
+    label: "Akties",
+    align: "left",
+    sortable: false,
+  },
+  {
+    name: "desc",
+>>>>>>> ede1377086369e7db261b3e304a9cdf701542d5a
     required: true,
     label: "Link",
     align: "left",
@@ -122,11 +179,11 @@ const columns = [
     sortable: true,
   },
   {
-    name: "website",
+    name: "site",
     required: true,
     label: "Website",
     align: "left",
-    field: "website",
+    field: "site",
     sortable: true,
   },
   {
@@ -135,6 +192,14 @@ const columns = [
     label: "DA",
     align: "left",
     field: "da",
+    sortable: true,
+  },
+  {
+    name: "pa",
+    required: true,
+    label: "PA",
+    align: "left",
+    field: "pa",
     sortable: true,
   },
   {
@@ -165,7 +230,11 @@ export default {
   data() {
     return {
       selected: [],
+<<<<<<< HEAD
       rows: [{ name: "none" }],
+=======
+      rows: [],
+>>>>>>> ede1377086369e7db261b3e304a9cdf701542d5a
       columns,
       loading: false,
       refreshButton: false,
@@ -184,6 +253,7 @@ export default {
       this.newLinkModal = true;
     },
     addNewLink() {
+<<<<<<< HEAD
     console.log(this.newLink)
       this.$api.post('backlink', this.newLink).then((response) => {
         this.rows.push({
@@ -194,11 +264,30 @@ export default {
           lastCheck: response.data.last_check,
         });
       })
+=======
+      // send to API if succesfull:
+      this.$api
+        .post("backlinks", {
+          link: this.newLink.link,
+          site: this.newLink.site,
+          status: "null",
+          pa: "?",
+          da: "?",
+          last_check: "?",
+        })
+        .then((response) => {
+          this.rows.push(response.data);
+          this.newLink.site = ""
+          this.newLink.link = ""
+          this.newLinkModal = true;
+        });
+>>>>>>> ede1377086369e7db261b3e304a9cdf701542d5a
 
     },
     async scanLinks(links) {
       this.$q.loading.show({
         message: "Sites worden gescand...",
+<<<<<<< HEAD
       });
       let postData = [];
       this.rows.forEach((link) => {
@@ -218,6 +307,25 @@ export default {
       this.selected.forEach((element, index) => {
         this.$api.delete(`backlinks/${element.id}`).then(() => {
           this.rows.splice(index, 1)
+=======
+      });
+      await this.$api
+        .get("backlinks/scan")
+        .then((response) => {
+          this.$q.loading.hide();
+          this.$q.notify({
+            message: "Scan geslaagd",
+            type: "positive",
+          });
+        });
+    },
+    deleteLink(id, i){
+      this.$api.delete(`backlinks/${id}`).then((response)=>{
+        this.rows.splice(i, 1);
+        this.$q.notify({
+          type:'positive',
+          message:response.data
+>>>>>>> ede1377086369e7db261b3e304a9cdf701542d5a
         })
       })
     }
@@ -230,6 +338,11 @@ export default {
         this.refreshButton = false;
       }
     },
+  },
+  mounted() {
+    this.$api.get("backlinks").then((response) => {
+      this.rows = response.data;
+    });
   },
 };
 </script>
