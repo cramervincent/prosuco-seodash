@@ -7,44 +7,8 @@
         :columns="columns"
         row-key="name"
         :loading="loading"
-        :selected-rows-label="getSelectedString"
-        selection="single"
-        v-model:selected="selected"
       >
         <template v-slot:top>
-<<<<<<< HEAD
-          <div v-if="!refreshButton">
-            <q-btn
-              icon="link"
-              unelevated
-              rounded
-              color="positive"
-              text-color="white"
-              label="Toevoegen"
-              class="q-mr-sm"
-              @click="addSiteModal"
-            />
-          </div>
-          <div v-else>
-            <q-btn
-              icon="find_in_page"
-              unelevated
-              rounded
-              color="primary"
-              text-color="white"
-              label="Start scan"
-              @click="scanLinks(selected)"
-            />
-            <q-btn
-              icon="delete_forever"
-              rounded
-              color="negative"
-              text-color="white"
-              class="q-ml-sm"
-              @click="deleteLinks"
-            />
-          </div>
-=======
           <q-btn
             icon="link"
             unelevated
@@ -69,28 +33,33 @@
           <q-td>
             <q-btn-dropdown flat dropdown-icon="more_horiz">
               <q-list bordered>
-                <q-item clickable v-ripple>
+                <q-item
+                  clickable
+                  v-ripple
+                  @click="scan_individual(props.row.id, props.pageIndex)"
+                >
                   <q-item-section avatar>
-                    <q-icon color="primary" name="find_in_page" size="sm"/>
+                    <q-icon color="primary" name="find_in_page" size="sm" />
                   </q-item-section>
                   <q-item-section>Scan</q-item-section>
                 </q-item>
-                <q-item clickable v-ripple @click="deleteLink(props.row.id, props.pageIndex)">
+                <q-item
+                  clickable
+                  v-ripple
+                  @click="deleteLink(props.row.id, props.pageIndex)"
+                >
                   <q-item-section avatar>
-                    <q-icon color="negative" name="delete_forever" size="sm"/>
+                    <q-icon color="negative" name="delete_forever" size="sm" />
                   </q-item-section>
                   <q-item-section>Verwijder</q-item-section>
                 </q-item>
               </q-list>
-
             </q-btn-dropdown>
           </q-td>
->>>>>>> ede1377086369e7db261b3e304a9cdf701542d5a
         </template>
-        <!-- <template v-slot:body-cell-select="props">
-{{ selected }}
-<q-checkbox v-model="selected"/>
-</template> -->
+        <template v-slot:body-cell-last_check="props">
+          <q-td>{{ formatDate(props.row.last_check) }}</q-td>
+        </template>
         <template v-slot:body-cell-status="props">
           <q-td :props="props">
             <div>
@@ -99,7 +68,14 @@
                 name="verified"
                 square
                 color="positive"
-                v-if="props.value === true"
+                v-if="props.value === 'true'"
+              />
+              <q-icon
+                size="sm"
+                name="hourglass_empty"
+                square
+                color="positive"
+                v-else-if="props.value === 'null'"
               />
               <q-icon size="sm" name="warning" square color="negative" v-else />
             </div>
@@ -126,11 +102,7 @@
             <q-input
               oulined
               type="url"
-<<<<<<< HEAD
-              v-model="newLink.website"
-=======
               v-model="newLink.site"
->>>>>>> ede1377086369e7db261b3e304a9cdf701542d5a
               label="Website waar de link is geplaatst"
             />
           </q-form>
@@ -157,20 +129,21 @@ import { data } from "autoprefixer";
 import { ref } from "vue";
 const columns = [
   {
-<<<<<<< HEAD
-    name: "select",
-  },
-  {
-    name: "link",
-=======
     name: "actions",
     label: "Akties",
     align: "left",
     sortable: false,
   },
   {
+    name: "status",
+    required: true,
+    label: "Status",
+    align: "left",
+    field: "status",
+    sortable: true,
+  },
+  {
     name: "desc",
->>>>>>> ede1377086369e7db261b3e304a9cdf701542d5a
     required: true,
     label: "Link",
     align: "left",
@@ -203,17 +176,9 @@ const columns = [
     sortable: true,
   },
   {
-    name: "status",
-    required: true,
-    label: "Status",
-    align: "left",
-    field: "status",
-    sortable: true,
-  },
-  {
     name: "last_check",
     required: true,
-    label: "Laatste check",
+    label: "Laatst gevonden",
     align: "left",
     field: "last_check",
     sortable: true,
@@ -230,11 +195,7 @@ export default {
   data() {
     return {
       selected: [],
-<<<<<<< HEAD
-      rows: [{ name: "none" }],
-=======
       rows: [],
->>>>>>> ede1377086369e7db261b3e304a9cdf701542d5a
       columns,
       loading: false,
       refreshButton: false,
@@ -245,7 +206,6 @@ export default {
   methods: {
     loadAllLinks() {
       this.$api.get("backlinks").then((response) => {
-        console.log(response.data);
         this.rows = response.data;
       });
     },
@@ -253,18 +213,6 @@ export default {
       this.newLinkModal = true;
     },
     addNewLink() {
-<<<<<<< HEAD
-    console.log(this.newLink)
-      this.$api.post('backlink', this.newLink).then((response) => {
-        this.rows.push({
-          name: response.data.id,
-          link: this.newLink.link,
-          website: this.newLink.website,
-          status: false,
-          lastCheck: response.data.last_check,
-        });
-      })
-=======
       // send to API if succesfull:
       this.$api
         .post("backlinks", {
@@ -277,58 +225,53 @@ export default {
         })
         .then((response) => {
           this.rows.push(response.data);
-          this.newLink.site = ""
-          this.newLink.link = ""
+          this.newLink.site = "";
+          this.newLink.link = "";
           this.newLinkModal = true;
         });
->>>>>>> ede1377086369e7db261b3e304a9cdf701542d5a
-
     },
     async scanLinks(links) {
       this.$q.loading.show({
         message: "Sites worden gescand...",
-<<<<<<< HEAD
       });
-      let postData = [];
-      this.rows.forEach((link) => {
-        postData.push(link.id);
-      });
-      await this.$api.post("backlinks/scan", postData).then((response) => {
+      await this.$api.get("backlinks/scan").then((response) => {
+        this.rows = response.data;
         this.$q.loading.hide();
-
         this.$q.notify({
-          message: response.data,
-          timeout: 2500,
+          message: "Scan geslaagd",
           type: "positive",
         });
       });
     },
-    deleteLinks() {
-      this.selected.forEach((element, index) => {
-        this.$api.delete(`backlinks/${element.id}`).then(() => {
-          this.rows.splice(index, 1)
-=======
+    scan_individual(id, i) {
+      this.rows[i].status = "null";
+      this.$api.get(`backlinks/scan/${id}`).then((response) => {
+        this.rows[i] = response.data;
       });
-      await this.$api
-        .get("backlinks/scan")
-        .then((response) => {
-          this.$q.loading.hide();
-          this.$q.notify({
-            message: "Scan geslaagd",
-            type: "positive",
-          });
-        });
     },
-    deleteLink(id, i){
-      this.$api.delete(`backlinks/${id}`).then((response)=>{
+    deleteLink(id, i) {
+      this.$api.delete(`backlinks/${id}`).then((response) => {
         this.rows.splice(i, 1);
         this.$q.notify({
-          type:'positive',
-          message:response.data
->>>>>>> ede1377086369e7db261b3e304a9cdf701542d5a
-        })
-      })
-    }
+          type: "positive",
+          message: response.data,
+        });
+      });
+    },
+    formatDate(date) {
+      let check_date = new Date(date);
+      const now = new Date();
+      const delta = now - check_date;
+      const days = Math.floor(delta / 86400000);
+
+      if (days === 0) {
+        return "Vandaag";
+      } else if (days === 1) {
+        return "Gisteren";
+      } else {
+        return `${days} dagen geleden`;
+      }
+    },
   },
   watch: {
     selected(v) {

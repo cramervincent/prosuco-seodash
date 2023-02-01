@@ -18,27 +18,50 @@ async def get_all_backlinks(db:Session = Depends(get_db)):
 async def get_all_backlinks(db:Session = Depends(get_db)):
     from datetime import date
     results = db.query(models.Backlinks).all()
-    today = date.today()
+    today = date.today().strftime('%m/%d/%Y')
     
-    for r in results:
-        print(r.id)
-        # result = db.get(models.Backlinks, r.id)
+    for result in results:  
+        print(f"{result.id} / {len(results)}")
+        entry = db.get(models.Backlinks, result.id)
         
         
-        # if not scan_all_backlinks(result.site, result.link):
-        #     result.status = "False",
-        #     result.last_check = "today.strftime('%m/%d/%Y')"
-        #     db.add(result)
-        #     db.commit()
+        if await scan_all_backlinks(result.site, result.link) == False:
+            entry.status = 'false'
+                   
+        else:
+            entry.status = 'true'
+            entry.last_check = today
             
-        # else:
-        #     result.status = "True",
-        #     result.last_check = "today.strftime('%m/%d/%Y')"
-        #     db.add(result)
-        #     db.commit()
-          
-        # db.refresh(results)
-        return results
+        
+        
+    
+        db.commit()
+    
+    return db.query(models.Backlinks).all()
+
+
+@router.get("/backlinks/scan/{bId}")
+async def get_all_backlinks(bId, db: Session = Depends(get_db)):
+    from datetime import date
+    results = db.query(models.Backlinks).filter(models.Backlinks.id == bId).first()
+    today = date.today().strftime('%m/%d/%Y')
+
+    
+        
+    entry = db.get(models.Backlinks, bId)
+
+    if await scan_all_backlinks(entry.site, entry.link) == False:
+        entry.status = 'false'
+
+    else:
+        entry.status = 'true'
+        entry.last_check = today
+
+    db.commit()
+
+    return db.query(models.Backlinks).filter(models.Backlinks.id == bId).first()
+
+
 
 
 @router.get("/backlinks/{bId}")

@@ -1,5 +1,6 @@
 import requests
-def scan_all_backlinks(url, target_url):
+
+async def scan_all_backlinks(url, target_url):
     response = requests.get(url)
     if response.status_code == 200:
         if target_url in response.text:
@@ -8,6 +9,7 @@ def scan_all_backlinks(url, target_url):
         else:
             return False
     else:
-        return False
+        return await False
 
-    
+
+
